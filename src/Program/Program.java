@@ -1,3 +1,5 @@
+package Program;
+
 import MP3GUI.PlayerGUI;
 
 public class Program {
