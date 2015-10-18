@@ -112,6 +112,7 @@ public class MainWindow extends Window {
     private Button playButton;
     private Button stopButton;
     private Button openButton;
+    private Button replayButton;
     private boolean maximized = false;
     private boolean refresherRunning = false;
 
@@ -246,7 +247,7 @@ public class MainWindow extends Window {
                 setTimeViews(0.0);
             }
         });
-        openButton = new Button("..", new Action() {
+        openButton = new Button("otworz", new Action() {
             @Override
             public void doAction() {
                 File file = FileDialog.showOpenFileDialog(MainWindow.this.getOwner(),new File(System.getProperty("user.dir")),"Wybierz plik: ");
@@ -267,9 +268,24 @@ public class MainWindow extends Window {
                 }
             }
         });
+        replayButton = new Button("zapetlenie:wyl", new Action() {
+            @Override
+            public void doAction() {
+                if (player.isReplaying()){
+                    replayButton.setText("zapetlenie:wyl");
+                    player.setReplaying(false);
+                }
+                else {
+                    replayButton.setText("zapetlenie:wl");
+                    player.setReplaying(true);
+                }
+            }
+        });
+
         buttonsPanel = new Panel(new Border.Standard(), Panel.Orientation.VERTICAL);
         buttonsPanel.addComponent(playButton);
         buttonsPanel.addComponent(stopButton);
+        buttonsPanel.addComponent(replayButton);
         buttonsPanel.addComponent(openButton);
 
         timeLabelPanel = new Panel(new Border.Standard(), Panel.Orientation.HORISONTAL);

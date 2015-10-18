@@ -20,6 +20,7 @@ public class PlayerFacade {
     private JFXPanel fxPanel;
     private boolean pause = false;
     private boolean stop = true;
+    private boolean replay = false;
 
     PlayerFacade (){
         this.fxPanel = new JFXPanel();
@@ -94,6 +95,15 @@ public class PlayerFacade {
     public void open(String music){
         media=new Media(music);
         mp=new MediaPlayer(media);
+        mp.setOnEndOfMedia(new Runnable() {
+            @Override
+            public void run() {
+                mp.seek(Duration.ZERO);
+                if (!replay) {
+                    stop();
+                }
+            }
+        });
     }
     //zakres-[0.0 , 1.0]
     public void setVolume(double value){
@@ -107,5 +117,13 @@ public class PlayerFacade {
     }
     public boolean isOpened(){
         return mp != null;
+    }
+
+    public boolean isReplaying() {
+        return replay;
+    }
+
+    public void setReplaying(boolean replay) {
+        this.replay = replay;
     }
 }
