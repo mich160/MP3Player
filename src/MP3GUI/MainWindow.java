@@ -103,7 +103,6 @@ public class MainWindow extends Window {
     private boolean refresherRunning = false;
 
     private PlayerFacade player;
-    private timeRefresher timeRefresher = null;
 
     private final static int MINUTES = 0;// used in getTimeParsed
     private final static int SECONDS = 1;
@@ -127,10 +126,11 @@ public class MainWindow extends Window {
 
     private synchronized void setTimeViews(double time){
         int[] parsedTime = getTimeParsed(time);
-        String timeLabelText = String.format("%02d:%02d",parsedTime[MINUTES],parsedTime[SECONDS]);
-        this.timeLabel.setText(timeLabelText);
         if (isFileOpened()){
             this.timeBar.setProgress(time/player.getStopTime());
+            int[] stopTime = getTimeParsed(player.getStopTime());
+            String timeLabelText = String.format("%02d:%02d/%02d:%02d",parsedTime[MINUTES],parsedTime[SECONDS],stopTime[MINUTES],stopTime[SECONDS]);
+            this.timeLabel.setText(timeLabelText);
         }
     }
 
@@ -157,7 +157,7 @@ public class MainWindow extends Window {
     private void buildComponents(){
         titlePanel = new Panel(new Border.Invisible(), Panel.Orientation.HORISONTAL);
         titleLabel = new Label("Brak pliku.");
-        maximizeButton = new Button("[+]", new Action() {
+        maximizeButton = new Button("[_]", new Action() {
             @Override
             public void doAction() {
                 if (!MainWindow.this.maximized){
@@ -267,7 +267,7 @@ public class MainWindow extends Window {
         buttonsPanel.addComponent(openButton);
 
         timeLabelPanel = new Panel(new Border.Standard(), Panel.Orientation.HORISONTAL);
-        timeLabel = new Label("00:00");
+        timeLabel = new Label("00:00/00:00");
         timeLabelPanel.addComponent(timeLabel);
 
         settingsPanel = new Panel(new Border.Invisible(), Panel.Orientation.HORISONTAL);
