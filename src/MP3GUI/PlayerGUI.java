@@ -12,7 +12,7 @@ public class PlayerGUI {
         return playerGUI;
     }
 
-    public PlayerGUI(){
+    private PlayerGUI(){
         build();
     }
 
@@ -24,9 +24,7 @@ public class PlayerGUI {
         }
         textGUI.getScreen().startScreen();
         textGUI.setTitle("GUI Test");
-
-        //Do GUI logic here
-
+        textGUI.showWindow(new MainWindow("MP3"), GUIScreen.Position.CENTER);
         textGUI.getScreen().stopScreen();
     }
 }
