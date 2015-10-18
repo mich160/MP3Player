@@ -44,7 +44,7 @@ public class PlayerFacade {
             mp.seek(Duration.seconds(second));
         }
     }
-    public void start() throws NullPointerException{
+    public boolean start() throws NullPointerException{
         if(media==null){
             throw new NullPointerException();
         }
@@ -53,16 +53,19 @@ public class PlayerFacade {
             Duration time=mp.getCurrentTime();
             mp.setStartTime(time);
             mp.play();
+            return true;
         }
         if (!pause && !stop){
             pause=true;
             mp.pause();
+            return false;
         }
         else{
             mp.seek(Duration.ZERO);
             mp.play();
             pause=false;
             stop=false;
+            return true;
         }
     }
     public void stop(){

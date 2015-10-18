@@ -7,6 +7,7 @@ import com.googlecode.lanterna.gui.component.Label;
 import com.googlecode.lanterna.gui.component.Panel;
 import com.googlecode.lanterna.gui.component.ProgressBar;
 import com.googlecode.lanterna.gui.dialog.FileDialog;
+import com.googlecode.lanterna.gui.layout.HorisontalLayout;
 import com.googlecode.lanterna.input.Key;
 import com.googlecode.lanterna.terminal.TerminalPosition;
 import com.googlecode.lanterna.terminal.TerminalSize;
@@ -26,12 +27,24 @@ public class MainWindow extends Window {
         public Result keyboardInteraction(Key key) {
             if (key.getKind() == Key.Kind.ArrowLeft){
                 if (isFileOpened() && player.getCurrentTime() - 5 > 0){
-                    player.setSecond(player.getCurrentTime()-5);
+                    player.setSecond(player.getCurrentTime() - 5);
+                    if (isPlaying()){
+                        refresherRunning = true;
+                    }
+                    else {
+                        setTimeViews(player.getCurrentTime());
+                    }
                 }
             }
             else if (key.getKind() == Key.Kind.ArrowRight){
                 if (isFileOpened() && player.getCurrentTime() + 5 < player.getStopTime()){
                     player.setSecond(player.getCurrentTime()+5);
+                    if (isPlaying()){
+                        refresherRunning = true;
+                    }
+                    else {
+                        setTimeViews(player.getCurrentTime());
+                    }
                 }
             }
             else if (key.getKind() == Key.Kind.ArrowDown){
@@ -113,7 +126,7 @@ public class MainWindow extends Window {
         buildComponents();
     }
 
-    private boolean isFileOpened(){
+    private synchronized boolean isFileOpened(){
         return player.isOpened();
     }
 
@@ -170,17 +183,15 @@ public class MainWindow extends Window {
                 }
             }
         });
-        maximizeButton.setAlignment(Component.Alignment.RIGHT_CENTER);
         exitButton = new Button("X", new Action() {
             @Override
             public void doAction() {
                 MainWindow.this.close();
             }
         });
-        exitButton.setAlignment(Component.Alignment.RIGHT_CENTER);
-        titlePanel.addComponent(titleLabel);
         titlePanel.addComponent(maximizeButton);
         titlePanel.addComponent(exitButton);
+        titlePanel.addComponent(titleLabel,HorisontalLayout.MAXIMIZES_HORIZONTALLY);
 
         timeBarPanel = new Panel("Czas", new Border.Standard(), Panel.Orientation.HORISONTAL);
         timeBar = new TimeBar(5);
@@ -222,12 +233,7 @@ public class MainWindow extends Window {
             @Override
             public void doAction() {
                 if (isFileOpened()){
-                    if (!player.isPlaying()){
-                        refresherRunning = true;
-                    }
-                    else {
-                        refresherRunning = false;
-                    }
+                    refresherRunning = true;
                     player.start();
                 }
             }
