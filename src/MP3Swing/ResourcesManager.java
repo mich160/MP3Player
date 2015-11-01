@@ -16,10 +16,11 @@ public class ResourcesManager {
     }
 
     private void loadIcons() {
+        icons = new HashMap<>();
         ImageIcon repeatIcon = new ImageIcon("res/repeat.png");
     }
 
     private ResourcesManager(){
-
+        loadIcons();
     }
 }

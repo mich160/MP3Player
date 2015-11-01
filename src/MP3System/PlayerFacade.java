@@ -1,5 +1,6 @@
 package MP3System;
 
+import MP3Swing.PlaylistWindow;
 import javafx.embed.swing.JFXPanel;
 import javafx.scene.media.Media;
 import javafx.scene.media.MediaPlayer;
@@ -21,12 +22,13 @@ public class PlayerFacade {
     private boolean pause = false;
     private boolean stop = true;
     private boolean replay = false;
+    private double volume = 0.5;
 
     PlayerFacade (){
         this.fxPanel = new JFXPanel();
     }
 
-    public double getCurrentTime(){
+    public synchronized double getCurrentTime(){
         return mp.getCurrentTime().toSeconds();
     }
     public double getStopTime(){
@@ -54,6 +56,7 @@ public class PlayerFacade {
             Duration time=mp.getCurrentTime();
             mp.setStartTime(time);
             mp.play();
+            mp.setVolume(volume);
             return true;
         }
         if (!pause && !stop){
@@ -64,6 +67,7 @@ public class PlayerFacade {
         else{
             mp.seek(Duration.ZERO);
             mp.play();
+            mp.setVolume(volume);
             pause=false;
             stop=false;
             return true;
@@ -84,17 +88,37 @@ public class PlayerFacade {
         else if(pause){
             pause=false;
             Duration time=mp.getCurrentTime();
-            mp.setStartTime(time);//tu poprawi³em
+            mp.setStartTime(time);
             mp.play();
+            mp.setVolume(volume);
         }else{
             pause=true;
             mp.pause();
         }
     }
 
+    public void open(String music, PlaylistWindow playlistWindow){
+        media=new Media(music);
+        mp=new MediaPlayer(media);
+        mp.setVolume(volume);
+        mp.setOnEndOfMedia(new Runnable() {
+            @Override
+            public void run() {
+                mp.seek(Duration.ZERO);
+                if (!replay) {
+                    stop();
+                }
+                else {
+                    playlistWindow.fireMusicFinished(PlayerFacade.this);
+                }
+            }
+        });
+    }
+
     public void open(String music){
         media=new Media(music);
         mp=new MediaPlayer(media);
+        mp.setVolume(volume);
         mp.setOnEndOfMedia(new Runnable() {
             @Override
             public void run() {
@@ -107,7 +131,10 @@ public class PlayerFacade {
     }
     //zakres-[0.0 , 1.0]
     public void setVolume(double value){
-        mp.setVolume(value);
+        volume = value;
+        if (mp != null){
+            mp.setVolume(value);
+        }
     }
     public double getVolume(){
         return mp.getVolume();
@@ -126,4 +153,5 @@ public class PlayerFacade {
     public void setReplaying(boolean replay) {
         this.replay = replay;
     }
+
 }
