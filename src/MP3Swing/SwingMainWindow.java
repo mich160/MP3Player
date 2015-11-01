@@ -19,7 +19,6 @@ public class SwingMainWindow extends JFrame{
     private static SwingMainWindow window = null;
 
     private JLabel titleLabel;
-    private JLabel volumeLabel;
     private JSlider timeSlider;
     private JSlider volumeSlider;
     private JButton repeatButton;
@@ -36,6 +35,8 @@ public class SwingMainWindow extends JFrame{
     private PlayerFacade player;
     private repeatOptions repeatOption;
     private AtomicBoolean refresherRunning;
+    private AtomicBoolean sliderChangedManually;
+    private Thread refresher;
 
     private enum repeatOptions{
         none, file, playlist
@@ -55,11 +56,13 @@ public class SwingMainWindow extends JFrame{
         player = PlayerFacade.getPlayer();
         repeatOption = repeatOptions.none;
         refresherRunning = new AtomicBoolean(false);
+        sliderChangedManually = new AtomicBoolean(false);
         setLayout(new GridBagLayout());
         buildComponents();
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         pack();
         setVisible(true);
+        setPreferredSize(new Dimension(500,300));
     }
 
     private int[] getTimeParsed(double time){
@@ -83,6 +86,33 @@ public class SwingMainWindow extends JFrame{
 
     }
 
+    private void initRefresher(){
+        refresher = new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    while (!refresherRunning.get()){
+                        try {
+                            Thread.sleep(200);
+                        } catch (InterruptedException e1) {
+                            e1.printStackTrace();
+                        }
+                    }
+                    try {
+                        Thread.sleep(200);
+                        double time = player.getCurrentTime();
+                        sliderChangedManually.set(false);
+                        timeSlider.setValue((int) time);
+                        sliderChangedManually.set(true);
+                        setTimeView(time);
+                    } catch (InterruptedException e1) {
+                        e1.printStackTrace();
+                    }
+                }
+            }
+        });
+    }
+
     private void buildComponents(){
         GridBagConstraints gridBagConstraints = new GridBagConstraints();
         titleLabel = new JLabel("Brak pliku.");
@@ -99,9 +129,8 @@ public class SwingMainWindow extends JFrame{
         volumeRepeatPanel.setLayout(new BoxLayout(volumeRepeatPanel,BoxLayout.Y_AXIS));
         repeatButton = new JButton("Powtarzaj: nie");//TODO IKONY
         volumeSlider = new JSlider(0,100,50);
-        volumeLabel = new JLabel("G³oœnoœæ");
+        volumeSlider.setBorder(BorderFactory.createTitledBorder("G³oœnoœæ"));
         volumeRepeatPanel.add(repeatButton);
-        volumeRepeatPanel.add(volumeLabel);
         volumeRepeatPanel.add(volumeSlider);
         gridBagConstraints.gridx = 0;
         gridBagConstraints.gridy = 2;
@@ -124,8 +153,18 @@ public class SwingMainWindow extends JFrame{
         playlistButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                playlistWindow = PlaylistWindow.getPlaylistWindow();
-                playlistWindow.setLocation(SwingMainWindow.this.getX()+SwingMainWindow.this.getWidth(),SwingMainWindow.this.getY());
+                if (playlistWindow == null){
+                    playlistWindow = PlaylistWindow.getPlaylistWindow();
+                    playlistWindow.setLocation(SwingMainWindow.this.getX()+SwingMainWindow.this.getWidth(),SwingMainWindow.this.getY());
+                }
+                else {
+                    if (playlistWindow.isVisible()){
+                        playlistWindow.setVisible(false);
+                    }
+                    else {
+                        playlistWindow.setVisible(true);
+                    }
+                }
             }
         });
         timeLabel = new JLabel("00:00/00:00");
@@ -140,14 +179,18 @@ public class SwingMainWindow extends JFrame{
                 if (repeatOption == repeatOptions.none){
                     repeatOption = repeatOptions.file;
                     repeatButton.setText("Powtarzaj: plik");
+                    player.setReplaying(true);
                 }
                 else if (repeatOption == repeatOptions.file){
                     repeatOption = repeatOptions.playlist;
                     repeatButton.setText("Powtarzaj: playlista");
+                    playlistWindow.setRepeatAll(true);
+                    player.setReplaying(false);
                 }
                 else {
                     repeatOption = repeatOptions.none;
                     repeatButton.setText("Powtarzaj: nie");
+                    playlistWindow.setRepeatAll(false);
                 }
             }
         });
@@ -160,6 +203,9 @@ public class SwingMainWindow extends JFrame{
         openButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
+                if (playlistWindow != null && playlistWindow.isVisible()){
+                    playlistWindow.setVisible(false);
+                }
                 JFileChooser fileChooser = new JFileChooser();
                 FileNameExtensionFilter filter = new FileNameExtensionFilter("music", "mp3");
                 fileChooser.setFileFilter(filter);
@@ -170,29 +216,9 @@ public class SwingMainWindow extends JFrame{
                     titleLabel.setText(fileChooser.getSelectedFile().getName());
                     timeSlider.setMinimum(0);
                     timeSlider.setMaximum((int) player.getStopTime());
-                    Thread refresher = new Thread(new Runnable() {
-                        @Override
-                        public void run() {
-                            while (true) {
-                                while (!refresherRunning.get()){
-                                    try {
-                                        Thread.sleep(200);
-                                    } catch (InterruptedException e1) {
-                                        e1.printStackTrace();
-                                    }
-                                }
-                                try {
-                                    Thread.sleep(200);
-                                    double time = player.getCurrentTime();
-                                    setSliderView(time);
-                                    //timeSlider.setValue((int) time);
-                                    setTimeView(time);
-                                } catch (InterruptedException e1) {
-                                    e1.printStackTrace();
-                                }
-                            }
-                        }
-                    });
+                    if (refresher == null){
+                        initRefresher();
+                    }
                     refresherRunning.set(true);
                     refresher.start();
                 }
@@ -206,23 +232,43 @@ public class SwingMainWindow extends JFrame{
             @Override
             public void actionPerformed(ActionEvent e) {
                 player.stop();
-                timeSlider.setValue(0);
                 refresherRunning.set(false);
             }
         });
         timeSlider.addChangeListener(new ChangeListener() {
             @Override
             public void stateChanged(ChangeEvent e) {
-                player.setSecond(timeSlider.getValue());
+                if (sliderChangedManually.get()){
+                    refresherRunning.set(false);
+                    player.setSecond(timeSlider.getValue());
+                    refresherRunning.set(true);
+                }
             }
         });
 
         playButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
-                if (player.isOpened()){
+                if (player.isOpened() && !playlistWindow.isVisible()){
                     refresherRunning.set(true);
                     player.start();
+                }
+                else if (player.isOpened() && playlistWindow.isVisible()){
+                    refresherRunning.set(true);
+                    player.start();
+                }
+                else if (playlistWindow.isVisible()){
+                    playlistWindow.ensureSelection();
+                    player.open(playlistWindow);
+                    player.start();
+                    titleLabel.setText(playlistWindow.getSelectedMusic());
+                    timeSlider.setMinimum(0);
+                    timeSlider.setMaximum((int) player.getStopTime());
+                    if (refresher == null){
+                        initRefresher();
+                    }
+                    refresher.start();
+                    refresherRunning.set(true);
                 }
             }
         });

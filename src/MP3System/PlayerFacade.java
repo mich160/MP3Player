@@ -97,8 +97,8 @@ public class PlayerFacade {
         }
     }
 
-    public void open(String music, PlaylistWindow playlistWindow){
-        media=new Media(music);
+    public void open(PlaylistWindow playlistWindow){
+        media=new Media(playlistWindow.getSelectedMusic());
         mp=new MediaPlayer(media);
         mp.setVolume(volume);
         mp.setOnEndOfMedia(new Runnable() {
@@ -108,9 +108,8 @@ public class PlayerFacade {
                 if (!replay) {
                     stop();
                 }
-                else {
-                    playlistWindow.fireMusicFinished(PlayerFacade.this);
-                }
+                playlistWindow.fireMusicFinished(PlayerFacade.this);
+
             }
         });
     }
